@@ -5,27 +5,14 @@ php_flag display_errors on
 php_value error_reporting E_ALL
 
 # Règles pour l'API
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^(.*)$ $1 [R=200,L]
-
-# Règles pour l'API
 RewriteRule ^api/articles/?$ api/articles.php [L,QSA]
 RewriteRule ^api/factures/?$ api/factures.php [L,QSA]
-
-# Headers pour l'API
-<FilesMatch "^api/.*\.php$">
-    Header always set Content-Type "application/json; charset=UTF-8"
-    Header always set Access-Control-Allow-Origin "*"
-    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
-    Header always set Access-Control-Max-Age "3600"
-</FilesMatch>
 
 # Permettre l'accès aux fichiers et répertoires existants
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Rediriger toutes les autres requêtes vers index.html pour le frontend
+# Rediriger toutes les autres requêtes vers index.html
 RewriteRule ^ index.html [L]
 
 # Activer la compression
@@ -42,9 +29,4 @@ RewriteRule ^ index.html [L]
     ExpiresByType image/png "access plus 1 year"
     ExpiresByType text/css "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
-</IfModule>
-
-# Activer CORS pour le même domaine
-Header set Access-Control-Allow-Origin "*"
-Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header set Access-Control-Allow-Headers "Content-Type" 
+</IfModule> 

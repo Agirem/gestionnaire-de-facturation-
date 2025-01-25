@@ -3,25 +3,32 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('error_log', __DIR__ . '/debug.log');
 
-error_log("Requête reçue sur /api/articles");
+error_log("Requête reçue sur /api/articles.php");
+error_log("Méthode: " . $_SERVER['REQUEST_METHOD']);
 
-// Ajout des headers CORS
+// Configuration du logging
+ini_set('log_errors', 1);
+ini_set('error_log', '../php-error.log');
+
+// Headers CORS pour permettre l'accès depuis n'importe quelle origine
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Max-Age: 3600');
 
-// Si c'est une requête OPTIONS, on arrête ici
+// Content-Type header
+header('Content-Type: application/json; charset=UTF-8');
+
+// Gérer les requêtes OPTIONS (pre-flight)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+    http_response_code(200);
+    exit();
 }
 
 require_once '../config/database.php';
 require_once '../models/Article.php';
 
-header('Content-Type: application/json');
-
 try {
-    error_log("Méthode: " . $_SERVER['REQUEST_METHOD']);
     $article = new Article($pdo);
     $method = $_SERVER['REQUEST_METHOD'];
 

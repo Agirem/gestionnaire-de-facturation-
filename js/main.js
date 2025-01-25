@@ -1,5 +1,38 @@
-// Configuration de l'API
-const API_BASE_URL = ''; // Vide car on utilise des chemins relatifs
+// URL de base de l'API (backend)
+const API_BASE_URL = 'https://seagreen-wasp-711925.hostingersite.com';
+
+// Fonction utilitaire pour les requêtes fetch
+async function fetchAPI(endpoint, options = {}) {
+    // Construction de l'URL complète
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        ...options,
+    };
+    
+    try {
+        console.log('Envoi requête à:', url, 'avec config:', config);
+        const response = await fetch(url, config);
+        console.log('Status HTTP:', response.status);
+        
+        const responseData = await response.json();
+        console.log('Réponse complète:', responseData);
+        
+        // On considère les statuts 2xx comme des succès
+        if (response.status >= 200 && response.status < 300) {
+            return responseData;
+        } else {
+            throw new Error(responseData.error || `Erreur HTTP: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Erreur fetch détaillée:', error);
+        throw error;
+    }
+}
 
 // Initialisation des données dans le localStorage
 if (!localStorage.getItem('articles')) {
@@ -27,17 +60,10 @@ async function ajouterArticle() {
     }
 
     try {
-        const response = await fetch('/api/articles.php', {
+        await fetchAPI('/api/articles.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ nom, prix, categorie })
         });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de l\'ajout de l\'article');
-        }
 
         document.getElementById('article-name').value = '';
         document.getElementById('article-price').value = '';
@@ -52,13 +78,9 @@ async function ajouterArticle() {
 
 async function supprimerArticle(id) {
     try {
-        const response = await fetch(`/api/articles.php?id=${id}`, {
+        await fetchAPI(`/api/articles.php?id=${id}`, {
             method: 'DELETE'
         });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la suppression');
-        }
 
         chargerArticles();
         showToast("Article supprimé avec succès", "success");
@@ -70,10 +92,7 @@ async function supprimerArticle(id) {
 
 async function chargerArticles() {
     try {
-        const response = await fetch('/api/articles.php');
-        const articles = await response.json();
-
-        // Stocker les articles dans une variable globale pour y accéder plus tard
+        const articles = await fetchAPI('/api/articles.php');
         window.articlesDisponibles = articles;
 
         const tableBody = document.querySelector('#articles-list tbody');
@@ -132,8 +151,7 @@ async function chargerArticles() {
 // Gestion du panier
 async function ajouterAuPanier(id) {
     try {
-        const response = await fetch(`/api/articles.php?id=${id}`);
-        const article = await response.json();
+        const article = await fetchAPI(`/api/articles.php?id=${id}`);
         
         if (!article || !article.id) {
             throw new Error('Article non trouvé');
@@ -261,38 +279,34 @@ async function finaliserFacture() {
 
         console.log("Données de la facture à envoyer:", factureData);
 
-        const response = await fetch('/api/factures.php', {
+        const response = await fetchAPI('/api/factures.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(factureData)
         });
 
-        const responseData = await response.json();
-        console.log("Réponse du serveur:", responseData);
+        console.log("Réponse du serveur:", response);
 
-        if (!response.ok) {
-            throw new Error(responseData.error || 'Erreur lors de la création de la facture');
+        // Vérifier si la réponse est un succès
+        if (response.success === true) {
+            // Réinitialisation du panier
+            panierActuel = [];
+            mettreAJourPanier();
+            document.getElementById('table-number').value = '';
+            
+            showToast(response.message || "Facture créée avec succès", "success");
+            chargerHistorique();
+        } else {
+            throw new Error(response.error || "Erreur lors de la création de la facture");
         }
-
-        // Réinitialisation du panier
-        panierActuel = [];
-        mettreAJourPanier();
-        document.getElementById('table-number').value = '';
-        
-        showToast("Facture finalisée avec succès", "success");
-        chargerHistorique();
     } catch (error) {
         console.error('Erreur détaillée:', error);
-        showToast(error.message || "Erreur lors de la finalisation de la facture", "error");
+        showToast(error.message, "error");
     }
 }
 
 async function chargerHistorique() {
     try {
-        const response = await fetch('/api/factures.php');
-        const factures = await response.json();
+        const factures = await fetchAPI('/api/factures.php');
         
         const tableBody = document.querySelector('#historique-table tbody');
         tableBody.innerHTML = factures.map(facture => `
@@ -317,8 +331,7 @@ async function chargerHistorique() {
 
 async function afficherDetailFacture(id) {
     try {
-        const response = await fetch(`/api/factures.php?id=${id}`);
-        const facture = await response.json();
+        const facture = await fetchAPI(`/api/factures.php?id=${id}`);
         
         if (!facture || !facture.articles) {
             throw new Error('Données de facture invalides');
@@ -423,8 +436,7 @@ function imprimerFacture(id) {
 // Gestion des modales
 async function ouvrirModalEdition(id) {
     try {
-        const response = await fetch(`/api/articles.php?id=${id}`);
-        const article = await response.json();
+        const article = await fetchAPI(`/api/articles.php?id=${id}`);
         
         if (!article || !article.id) {
             throw new Error('Article non trouvé');
@@ -453,17 +465,10 @@ async function sauvegarderArticle() {
     const categorie = document.getElementById('edit-article-category').value;
 
     try {
-        const response = await fetch(`/api/articles.php?id=${id}`, {
+        await fetchAPI(`/api/articles.php?id=${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ nom, prix, categorie })
         });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la modification');
-        }
 
         closeEditModal();
         chargerArticles();

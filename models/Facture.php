@@ -32,24 +32,41 @@ class Facture {
     }
     
     public function create($data) {
+        error_log("Début de la création de facture");
+        error_log("Données reçues : " . print_r($data, true));
+        
         $this->pdo->beginTransaction();
         try {
             // Création de la facture
+            error_log("Préparation de la requête d'insertion de facture");
             $stmt = $this->pdo->prepare("INSERT INTO factures (numero_table, total, date_creation) VALUES (?, ?, NOW())");
+            error_log("Exécution avec numero_table=" . $data['numero_table'] . " et total=" . $data['total']);
             $stmt->execute([$data['numero_table'], $data['total']]);
             $factureId = $this->pdo->lastInsertId();
+            error_log("Facture créée avec ID: " . $factureId);
             
             // Ajout des articles de la facture
+            error_log("Préparation de la requête d'insertion des articles");
             $stmt = $this->pdo->prepare("INSERT INTO facture_articles (facture_id, article_id, quantite, prix_unitaire) VALUES (?, ?, ?, ?)");
             foreach ($data['articles'] as $article) {
-                $stmt->execute([$factureId, $article['id'], $article['quantite'], $article['prix_unitaire']]);
+                error_log("Insertion article: " . print_r($article, true));
+                $stmt->execute([
+                    $factureId,
+                    $article['id'],
+                    $article['quantite'],
+                    $article['prix_unitaire']
+                ]);
             }
             
+            error_log("Commit de la transaction");
             $this->pdo->commit();
+            error_log("Facture créée avec succès");
             return $factureId;
         } catch (Exception $e) {
+            error_log("Erreur lors de la création de la facture: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             $this->pdo->rollBack();
-            throw $e;
+            throw new Exception("Erreur lors de la création de la facture: " . $e->getMessage());
         }
     }
     
